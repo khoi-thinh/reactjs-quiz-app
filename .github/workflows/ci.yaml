@@ -2,38 +2,44 @@ name: React.js CI
 
 on:
   pull_request:
-    branches:
-      - main
+    branches: "main"
 
 jobs:
   frontend-test:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: quiz-app
+        working-directory: ./quiz-app
+    strategy:
+      matrix:
+        node-version: [20.x]
+        architecture: [x64]
     steps:
-      - uses: actions/checkout@v4
+      - name: Check-out git repository  
+        uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: USE NODEJS ${{ matrix.node-version }} - ${{ matrix.architecture }}
         uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: quiz-app/package-lock.json
 
-      - name: Install dependencies & run tests
-        env:
-          CI: true
+      - name: Install project dependencies 
+        working-directory: ./quiz-app
         run: |
-          npm ci
+          npm i
           npm run lint
+          npm install --save-dev --save-exact prettier
           npm run prettier
           npm test
+        env:
+          CI: true 
 
       - name: Build
         run: npm run build
+        working-directory: ./quiz-app
 
-      - name: SonarCloud Scan (Frontend)
+      - name: Setup SonarQube
+        uses: warchant/setup-sonar-scanner@v8
+
+      - name: Analyze with SonarCloud
         uses: sonarsource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -42,38 +48,46 @@ jobs:
           projectBaseDir: quiz-app
           args: >
             -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }}
-            -Dsonar.projectKey=${{ secrets.SONAR_FRONTEND_PROJECT_KEY }}
+            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
             -Dsonar.host.url=${{ secrets.SONAR_URL }}
-            -Dsonar.sources=src
+            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+            -Dsonar.sources=src/
+            -Dsonar.verbose=true
             -Dsonar.pullrequest.key=${{ github.event.pull_request.number }}
             -Dsonar.pullrequest.branch=${{ github.head_ref }}
-            -Dsonar.pullrequest.base=${{ github.base_ref }}
-
+            -Dsonar.pullrequest.base=${{ github.base_ref }}           
+        
   backend-test:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: backend
+        working-directory: ./backend
+    strategy:
+      matrix:
+        node-version: [20.x]
+        architecture: [x64]
     steps:
-      - uses: actions/checkout@v4
+      - name: Check-out git repository  
+        uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: USE NODEJS ${{ matrix.node-version }} - ${{ matrix.architecture }}
         uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: backend/package-lock.json
 
-      - name: Install dependencies & run tests
-        env:
-          CI: true
+      - name: Install project dependencies 
+        working-directory: ./backend
         run: |
-          npm ci
+          npm i
           npm run lint
+          npm install --save-dev --save-exact prettier
           npm run prettier
           npm test
+        env:
+          CI: true 
 
-      - name: SonarCloud Scan (Backend)
+      - name: Setup SonarQube
+        uses: warchant/setup-sonar-scanner@v8
+
+      - name: Analyze with SonarCloud
         uses: sonarsource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -82,57 +96,44 @@ jobs:
           projectBaseDir: backend
           args: >
             -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }}
-            -Dsonar.projectKey=${{ secrets.SONAR_BACKEND_PROJECT_KEY }}
+            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
             -Dsonar.host.url=${{ secrets.SONAR_URL }}
-            -Dsonar.sources=.
+            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+            -Dsonar.sources=src/
+            -Dsonar.verbose=true
             -Dsonar.pullrequest.key=${{ github.event.pull_request.number }}
             -Dsonar.pullrequest.branch=${{ github.head_ref }}
-            -Dsonar.pullrequest.base=${{ github.base_ref }}
-
+            -Dsonar.pullrequest.base=${{ github.base_ref }}  
+          
   frontend-security:
     needs: frontend-test
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: quiz-app
+        working-directory: ./quiz-app
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Snyk Scan (Frontend)
+      - uses: actions/checkout@master
+      - name: Run Snyk to check for vulnerabilities
         uses: snyk/actions/node@master
-        continue-on-error: true
+        continue-on-error: true # To make sure that SARIF upload gets called
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --sarif-file-output=snyk-frontend.sarif
-
-      - name: Upload SARIF (Frontend)
-        uses: github/codeql-action/upload-sarif@v4
-        with:
-          sarif_file: quiz-app/snyk-frontend.sarif
+          
 
   backend-security:
     needs: backend-test
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: backend
+        working-directory: ./backend
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Snyk Scan (Backend)
+      - uses: actions/checkout@master
+      - name: Run Snyk to check for vulnerabilities
         uses: snyk/actions/node@master
-        continue-on-error: true
+        continue-on-error: true # To make sure that SARIF upload gets called
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --sarif-file-output=snyk-backend.sarif
-
-      - name: Upload SARIF (Backend)
-        uses: github/codeql-action/upload-sarif@v4
-        with:
-          sarif_file: backend/snyk-backend.sarif
-
+         
 
   frontend-image:
     needs: frontend-security
