@@ -118,7 +118,8 @@ jobs:
         continue-on-error: true # To make sure that SARIF upload gets called
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
+        with:
+          args: test --all-projects
 
   backend-security:
     needs: backend-test
@@ -133,7 +134,8 @@ jobs:
         continue-on-error: true # To make sure that SARIF upload gets called
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-         
+        with:
+          args: test --all-projects      
 
   frontend-image:
     needs: frontend-security
