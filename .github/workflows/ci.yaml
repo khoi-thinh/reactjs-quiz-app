@@ -40,7 +40,6 @@ jobs:
         run: npm run build
         working-directory: ./quiz-app
 
-              # Setup sonar-scanner
       - name: Setup SonarQube
         uses: warchant/setup-sonar-scanner@v8
 
@@ -58,7 +57,10 @@ jobs:
             -Dsonar.login=${{ secrets.SONAR_TOKEN }}
             -Dsonar.sources=src/
             -Dsonar.verbose=true
-        
+            -Dsonar.pullrequest.key=${{ github.event.pull_request.number }}
+            -Dsonar.pullrequest.branch=${{ github.head_ref }}
+            -Dsonar.pullrequest.base=${{ github.base_ref }}       
+            
   backend-test:
     runs-on: ubuntu-latest
     defaults:
