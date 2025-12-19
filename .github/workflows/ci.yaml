@@ -182,7 +182,7 @@ jobs:
     - name: Run Trivy vulnerability scanner
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: docker.io/${{ secrets.DOCKER_USERNAME }}/frontend-js:${IMAGE_TAG}
+        image-ref: docker.io/${{ secrets.DOCKER_USERNAME }}/frontend-jsname:${{ env.IMAGE_TAG }}
         format: 'sarif'
         output: 'trivy-results.sarif'
         severity: 'CRITICAL,HIGH'
