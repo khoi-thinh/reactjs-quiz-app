@@ -166,7 +166,7 @@ jobs:
     needs: frontend-security
     runs-on: ubuntu-latest
     permissions:
-      contents: read 
+      contents: write
       security-events: write 
       actions: read
     steps:
@@ -218,7 +218,7 @@ jobs:
         git config user.email "github-actions@github.com"
         git add kubernetes-manifest/frontend.yaml
         git commit -m "Deploy frontend ${IMAGE_TAG}"
-        git push
+        git push origin HEAD:${{ github.ref_name }}
 
   backend-image:
     needs: backend-security
