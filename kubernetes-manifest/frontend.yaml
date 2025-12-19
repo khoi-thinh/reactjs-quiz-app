@@ -22,10 +22,10 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: ogochukwuozotta/frontend-js:f9ca989c3269304974790c495b7773507eddf41e
+        image: thinhduckhoi/frontend-js:f9ca989c3269304974790c495b7773507eddf41e
         env:
         - name: VITE_REACT_APP_API_URL
-          value: "http://quizapp.cloudcorehub.com/api/questions"
+          value: "http://devsecops.khoidevops.space/api/questions"
         ports:
         - containerPort: 8080
 ---
