@@ -210,7 +210,7 @@ jobs:
       
     - name: Update Kubernetes Manifest
       run: |
-        sed -i "s|image: .*frontend-js:.*|image: ${{ secrets.DOCKER_USERNAME }}/frontend-js:${IMAGE_TAG}|" kubernetes-manifest/frontend.yml
+        sed -i "s|image: .*frontend-js:.*|image: ${{ secrets.DOCKER_USERNAME }}/frontend-js:${IMAGE_TAG}|" kubernetes-manifest/frontend.yaml
 
     - name: Commit Manifest
       run: |
