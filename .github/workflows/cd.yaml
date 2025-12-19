@@ -53,9 +53,10 @@ jobs:
           docker push ${{ secrets.DOCKER_USERNAME }}/frontend-js:${IMAGE_TAG}
 
       - name: Trivy scan frontend Docker image
+        if: needs.changes.outputs.frontend == 'true'
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: '${{ secrets.DOCKER_USERNAME }}/frontend-js:${{ env.IMAGE_TAG }}}'
+          image-ref: '${{ secrets.DOCKER_USERNAME }}/frontend-js:${{ env.IMAGE_TAG }}'
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
@@ -73,6 +74,7 @@ jobs:
           docker push ${{ secrets.DOCKER_USERNAME }}/backend-api:${IMAGE_TAG}
 
       - name: Trivy scan backend Docker image
+        if: needs.changes.outputs.backend == 'true'
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: '${{ secrets.DOCKER_USERNAME }}/backend-api:${{ env.IMAGE_TAG }}'
