@@ -1,0 +1,74 @@
+name: CD
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  IMAGE_TAG: ${{ github.sha }}
+
+permissions:
+  contents: write
+  security-events: write
+
+jobs:
+  build-and-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Docker login
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+
+      - name: Build and push frontend Docker image
+        working-directory: ./quiz-app
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/frontend-js:${IMAGE_TAG} .
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+          docker push ${{ secrets.DOCKER_USERNAME }}/frontend-js:${IMAGE_TAG}
+
+      - name: Build and push backend Docker image
+        working-directory: ./backend
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/backend-api:${IMAGE_TAG} .
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin 
+          docker push ${{ secrets.DOCKER_USERNAME }}/backend-api:${IMAGE_TAG}
+
+      - name: Trivy scan frontend Docker image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'docker.io/${{ secrets.DOCKER_USERNAME }}/frontend-js:${{ env.IMAGE_TAG }}'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Trivy scan backend Docker image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'docker.io/${{ secrets.DOCKER_USERNAME }}/backend-api:${{ env.IMAGE_TAG }}'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+        
+      - uses: snyk/actions/setup@master
+      - run: snyk auth ${{ secrets.SNYK_TOKEN }}
+
+      - run: snyk container test ${{ secrets.DOCKER_USERNAME }}/frontend-js:${IMAGE_TAG}
+        continue-on-error: true
+
+      - run: snyk container test ${{ secrets.DOCKER_USERNAME }}/backend-api:${IMAGE_TAG}
+        continue-on-error: true
+        
+      - name: Update Kubernetes manifests
+        run: |
+          sed -i "s|frontend-js:.*|frontend-js:${IMAGE_TAG}|" kubernetes-manifest/frontend.yaml
+          sed -i "s|backend-api:.*|backend-api:${IMAGE_TAG}|" kubernetes-manifest/backend.yaml
+
+      - name: Commit & push manifests
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add kubernetes-manifest/
+          git commit -m "Deploy ${IMAGE_TAG}" || echo "No changes"
+          git push origin HEAD:refs/heads/main
