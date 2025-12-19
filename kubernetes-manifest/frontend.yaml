@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: thinhduckhoi/frontend-js:f9ca989c3269304974790c495b7773507eddf41e
+        image: thinhduckhoi/frontend-js:2b890d47f4643bb119e47ec8bb5048cbb23bf70c
         env:
         - name: VITE_REACT_APP_API_URL
           value: "http://devsecops.khoidevops.space/api/questions"

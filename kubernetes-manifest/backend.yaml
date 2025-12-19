@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: thinhduckhoi/backend-api:f9ca989c3269304974790c495b7773507eddf41e
+        image: thinhduckhoi/backend-api:2b890d47f4643bb119e47ec8bb5048cbb23bf70c
         ports:
         - containerPort: 3000
         env:
